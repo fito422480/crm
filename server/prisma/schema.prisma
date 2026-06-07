@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VENDEDOR
+}
+
+enum LeadStage {
+  NUEVO
+  EXPLORANDO_LOTEAMIENTOS
+  CONSULTO_CUOTAS
+  COMPARANDO_OPCIONES
+  QUIERE_VISITA
+  QUIERE_ASESOR
+  RESERVA_POTENCIAL
+  CERRADO
+}
+
+enum LeadPriority {
+  URGENTE
+  ALTA
+  MEDIA
+  NORMAL
+  BAJA
+}
+
+enum LotStatus {
+  LIBRE
+  VENDIDO
+  RESERVADO
+}
+
+enum AttentionStatus {
+  PENDIENTE
+  EN_ATENCION
+  ATENDIDO
+  SEGUIMIENTO
+  CERRADO
+}
+
+enum InteractionRole {
+  USER
+  BOT
+  AGENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(VENDEDOR)
+  zone      String?
+  phone     String?
+  active    Boolean  @default(true)
+  disponible Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assignedLeads Lead[] @relation("AssignedVendor")
+  attendedLeads Lead[] @relation("AttendedBy")
+  events       LeadEvent[]
+
+  @@map("users")
+}
+
+model Lead {
+  id              String      @id @default(cuid())
+  phone           String
+  name            String?
+  intent          String?
+  ciudad          String?
+  nombreFraccion  String?     @map("nombre_fraccion")
+  manzana         String?
+  numeroLote      String?     @map("numero_lote")
+  quiereAsesor    Boolean     @default(false) @map("quiere_asesor")
+  quiereVisita    Boolean     @default(false) @map("quiere_visita")
+  quiereReserva   Boolean     @default(false) @map("quiere_reserva")
+  presupuestoCuota String?    @map("presupuesto_cuota")
+  proposito       String?
+  formaPago       String?     @map("forma_pago")
+  leadStage       LeadStage   @default(NUEVO) @map("lead_stage")
+  leadPriority    LeadPriority @default(NORMAL) @map("lead_priority")
+  leadScore       Int         @default(0) @map("lead_score")
+  ultimoEstado    String?     @map("ultimo_estado")
+  ultimaActividad DateTime?   @map("ultima_actividad")
+  context         Json?
+  memory          Json?
+  source          String?     @default("whatsapp")
+  notes           String?
+  zone            String?     @map("zona_asignada")
+  vendedorAsignadoId String?  @map("vendedor_asignado_id")
+  vendedorAsignado   User?    @relation("AssignedVendor", fields: [vendedorAsignadoId], references: [id])
+  attentionStatus    AttentionStatus @default(PENDIENTE) @map("attention_status")
+  attendedById       String?         @map("atendido_por_id")
+  attendedBy         User?           @relation("AttendedBy", fields: [attendedById], references: [id])
+  attendedAt         DateTime?       @map("atendido_en")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  interactions Interaction[]
+  lots         LeadLot[]
+  events      LeadEvent[]
+
+  @@unique([phone])
+  @@map("leads")
+}
+
+model Interaction {
+  id          String          @id @default(cuid())
+  leadId      String          @map("lead_id")
+  role        InteractionRole
+  content     String
+  contentType String?         @default("text") @map("content_type")
+  intent      String?
+  metadata    Json?
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("interactions")
+}
+
+model Property {
+  id              String   @id @default(cuid())
+  externalId      String?  @map("external_id")
+  name            String
+  departamento    String?
+  ciudad          String?
+  lotesDisponibles Int?    @default(0) @map("lotes_disponibles")
+  precioMin       Decimal? @map("precio_min")
+  precioMax       Decimal? @map("precio_max")
+  cuotaEstimada   Decimal? @map("cuota_estimada")
+  description     String?
+  metadata        Json?
+  lastSync        DateTime? @map("last_sync")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lots Lot[]
+
+  @@index([ciudad])
+  @@map("properties")
+}
+
+model Lot {
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  externalId String?  @map("external_id")
+  manzana    String?
+  numero     String?
+  status     LotStatus @default(LIBRE)
+  precio     Decimal?
+  area       String?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  property  Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  leadLots  LeadLot[]
+
+  @@index([propertyId])
+  @@map("lots")
+}
+
+model LeadEvent {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // ASSIGNED, REASSIGNED, STATUS_CHANGED, ATTENDED, NOTE
+  fromValue String?  @map("from_value")
+  toValue   String?  @map("to_value")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_events")
+}
+
+model LeadLot {
+  leadId    String   @map("lead_id")
+  lotId     String   @map("lot_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lot  Lot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, lotId])
+  @@map("lead_lots")
+}
