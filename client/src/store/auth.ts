@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
 
-const API_BASE = 'https://backend-production-9eab.up.railway.app';
+const API_BASE = 'https://backend-production-9eab.up.railway.app/api';
 
 interface AuthState {
   user: User | null;
