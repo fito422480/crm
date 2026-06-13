@@ -19,15 +19,15 @@ async function main() {
   });
 
   const vendors = [
-    { email: 'carlos@inmo.com', name: 'Carlos', zone: 'CENTRAL' },
-    { email: 'ana@inmo.com', name: 'Ana', zone: 'ITAPUA' },
-    { email: 'luis@inmo.com', name: 'Luis', zone: 'CAAGUAZU' },
+    { email: 'carlos@inmo.com', name: 'Carlos', zone: 'CENTRAL', phone: '595981111111' },
+    { email: 'ana@inmo.com', name: 'Ana', zone: 'ITAPUA', phone: '595981222222' },
+    { email: 'luis@inmo.com', name: 'Luis', zone: 'CAAGUAZU', phone: '595981333333' },
   ];
 
   for (const v of vendors) {
     await prisma.user.upsert({
       where: { email: v.email },
-      update: {},
+      update: { phone: v.phone },
       create: { ...v, password: vendorPassword, role: 'VENDEDOR' },
     });
   }

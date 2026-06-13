@@ -3,6 +3,10 @@ import { prisma } from '../index';
 import { AuthRequest } from '../middleware/auth';
 import { z } from 'zod';
 
+const META_TOKEN = process.env.META_API_TOKEN || '';
+const META_PHONE_NUMBER_ID = process.env.META_PHONE_NUMBER_ID || '';
+const META_API_VERSION = 'v25.0';
+
 export const leadsRouter = Router();
 
 leadsRouter.get('/', async (req: AuthRequest, res: Response) => {
@@ -292,5 +296,86 @@ leadsRouter.post('/:id/send-message', async (req: AuthRequest, res: Response) =>
       return res.status(400).json({ error: 'datos inválidos', details: error.errors });
     }
     res.status(500).json({ error: 'error al enviar mensaje' });
+  }
+});
+
+const notifyVendorSchema = z.object({
+  vendorId: z.string().min(1),
+  message: z.string().optional(),
+});
+
+leadsRouter.post('/:id/notify-vendor', async (req: AuthRequest, res: Response) => {
+  try {
+    const { vendorId, message } = notifyVendorSchema.parse(req.body);
+
+    const lead = await prisma.lead.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, phone: true, ciudad: true, nombreFraccion: true, intent: true },
+    });
+    if (!lead) return res.status(404).json({ error: 'lead no encontrado' });
+
+    const vendor = await prisma.user.findUnique({
+      where: { id: vendorId },
+      select: { id: true, name: true, phone: true },
+    });
+    if (!vendor) return res.status(404).json({ error: 'vendedor no encontrado' });
+    if (!vendor.phone) return res.status(400).json({ error: 'el vendedor no tiene teléfono registrado' });
+
+    if (!META_TOKEN || !META_PHONE_NUMBER_ID) {
+      return res.status(500).json({ error: 'Meta API no configurada' });
+    }
+
+    const leadName = lead.name || 'Cliente sin nombre';
+    const leadPhone = lead.phone || 'sin teléfono';
+    const leadCiudad = lead.ciudad || 'sin especificar';
+    const leadFraccion = lead.nombreFraccion || 'sin especificar';
+
+    const customMsg = message
+      ? `${message}\n\n— Cliente: ${leadName} (${leadPhone})`
+      : `🔔 *Nuevo lead derivado desde CRM*\n\n👤 *Cliente:* ${leadName}\n📞 *Teléfono:* ${leadPhone}\n📍 *Ciudad:* ${leadCiudad}\n🏡 *Fracción:* ${leadFraccion}\n\nHacé clic para abrir el CRM y gestionar este lead.`;
+
+    const whatsappPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: vendor.phone.replace(/\D/g, ''),
+      type: 'text',
+      text: { preview_url: false, body: customMsg },
+    };
+
+    const metaRes = await fetch(
+      `https://graph.facebook.com/${META_API_VERSION}/${META_PHONE_NUMBER_ID}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${META_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(whatsappPayload),
+      },
+    );
+
+    const metaData = await metaRes.json();
+    if (!metaRes.ok) {
+      console.error('meta api error:', metaData);
+      return res.status(502).json({ error: 'error al enviar WhatsApp', details: metaData });
+    }
+
+    await prisma.leadEvent.create({
+      data: {
+        leadId: lead.id,
+        userId: req.userId,
+        type: 'NOTIFIED_VENDOR',
+        toValue: vendorId,
+        metadata: { vendorName: vendor.name, vendorPhone: vendor.phone, message: customMsg },
+      },
+    });
+
+    res.json({ success: true, vendorName: vendor.name, metaMessageId: metaData.messages?.[0]?.id });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'datos inválidos', details: error.errors });
+    }
+    console.error('notify vendor error:', error);
+    res.status(500).json({ error: 'error al notificar vendedor' });
   }
 });

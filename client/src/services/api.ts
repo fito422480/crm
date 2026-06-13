@@ -57,6 +57,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ content }),
       }),
+    notifyVendor: (id: string, vendorId: string, message?: string) =>
+      request<any>(`/leads/${id}/notify-vendor`, {
+        method: 'POST',
+        body: JSON.stringify({ vendorId, message }),
+      }),
   },
   dashboard: {
     stats: () => request<any>('/dashboard/stats'),

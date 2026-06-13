@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/select';
 import {
   Search, Send, Phone, MapPin, Building2, UserCheck, ArrowLeft,
-  MessageSquare, History, RotateCcw,
+  MessageSquare, History, RotateCcw, Smartphone,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AttentionBadge } from '@/components/AttentionBadge';
 import type { Lead, Interaction, LeadEvent, AttentionStatus } from '@/types';
@@ -189,6 +190,16 @@ export function LeadsPage() {
       fetchEvents(selectedLead.id);
       fetchLeads();
     } catch {}
+  };
+
+  const handleNotifyVendor = async (vendorId: string, vendorName: string) => {
+    if (!selectedLead) return;
+    try {
+      const result = await api.leads.notifyVendor(selectedLead.id, vendorId);
+      toast.success(`WhatsApp enviado a ${result.vendorName}`);
+    } catch (err: any) {
+      toast.error(err.message || 'error al notificar');
+    }
   };
 
   const changeAttentionStatus = async (status: string) => {
@@ -371,31 +382,49 @@ export function LeadsPage() {
                     </DialogHeader>
                     <div className="space-y-2">
                       {vendedores.map((v) => (
-                        <button
+                        <div
                           key={v.id}
-                          onClick={() => handleAssign(v.id)}
-                          disabled={v.disponible === false}
-                          className={`w-full text-left p-3 rounded-lg border hover:bg-muted transition-colors flex items-center justify-between ${
+                          className={`p-3 rounded-lg border ${
                             selectedLead.vendedorAsignado?.id === v.id ? 'border-primary bg-primary/5' : ''
-                          } ${v.disponible === false ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          } ${v.disponible === false ? 'opacity-50' : ''}`}
                         >
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              'w-2 h-2 rounded-full shrink-0',
-                              v.disponible !== false ? 'bg-emerald-500' : 'bg-muted-foreground',
-                            )} />
-                            <div>
-                              <p className="font-medium text-sm">{v.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {v.zone || 'Sin zona'} · {v._count?.assignedLeads || 0} leads activos
-                                {v.disponible === false && ' · No disponible'}
-                              </p>
+                          <button
+                            onClick={() => handleAssign(v.id)}
+                            disabled={v.disponible === false}
+                            className="w-full text-left flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                'w-2 h-2 rounded-full shrink-0',
+                                v.disponible !== false ? 'bg-emerald-500' : 'bg-muted-foreground',
+                              )} />
+                              <div>
+                                <p className="font-medium text-sm">{v.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {v.zone || 'Sin zona'} · {v._count?.assignedLeads || 0} leads activos
+                                  {v.disponible === false && ' · No disponible'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          {selectedLead.vendedorAsignado?.id === v.id && (
-                            <Badge>Actual</Badge>
+                            {selectedLead.vendedorAsignado?.id === v.id && (
+                              <Badge>Actual</Badge>
+                            )}
+                          </button>
+                          {v.phone && (
+                            <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between">
+                              <span className="text-[11px] text-muted-foreground font-mono">{v.phone}</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs gap-1.5"
+                                onClick={() => handleNotifyVendor(v.id, v.name)}
+                              >
+                                <Smartphone className="h-3 w-3" />
+                                Derivar por WhatsApp
+                              </Button>
+                            </div>
                           )}
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </DialogContent>

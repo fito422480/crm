@@ -9,7 +9,7 @@ usersRouter.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const users = await prisma.user.findMany({
       where: { active: true },
-      select: { id: true, name: true, email: true, role: true, zone: true, disponible: true },
+      select: { id: true, name: true, email: true, role: true, zone: true, phone: true, disponible: true },
       orderBy: { name: 'asc' },
     });
     res.json(users);
@@ -23,7 +23,7 @@ usersRouter.get('/vendedores', async (req: AuthRequest, res: Response) => {
     const vendedores = await prisma.user.findMany({
       where: { role: 'VENDEDOR', active: true },
       select: {
-        id: true, name: true, email: true, zone: true, disponible: true,
+        id: true, name: true, email: true, zone: true, phone: true, disponible: true,
         _count: { select: { assignedLeads: { where: { leadStage: { not: 'CERRADO' } } } } },
       },
       orderBy: { name: 'asc' },
@@ -106,7 +106,7 @@ usersRouter.patch('/:id', async (req: AuthRequest, res: Response) => {
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: parsed,
-      select: { id: true, name: true, email: true, role: true, zone: true, active: true, disponible: true },
+      select: { id: true, name: true, email: true, role: true, zone: true, phone: true, active: true, disponible: true },
     });
     res.json(user);
   } catch {
@@ -129,7 +129,7 @@ usersRouter.patch('/:id/availability', async (req: AuthRequest, res: Response) =
     const updated = await prisma.user.update({
       where: { id: targetId },
       data: { disponible: !user.disponible },
-      select: { id: true, name: true, email: true, role: true, zone: true, disponible: true },
+      select: { id: true, name: true, email: true, role: true, zone: true, phone: true, disponible: true },
     });
 
     res.json(updated);
