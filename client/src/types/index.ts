@@ -2,8 +2,9 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'VENDEDOR';
+  role: 'ADMIN' | 'VENDEDOR' | 'AGENTE';
   zone: string | null;
+  phone: string | null;
   disponible?: boolean;
 }
 

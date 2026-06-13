@@ -1,14 +1,19 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, Building2 } from 'lucide-react';
-
-const items = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/leads', label: 'Chats', icon: Users },
-  { href: '/properties', label: 'Props', icon: Building2 },
-];
+import { LayoutDashboard, Users, Building2, Settings } from 'lucide-react';
+import { useAuth } from '@/store/auth';
 
 export function MobileNav() {
+  const { pathname } = useLocation();
+  const { user } = useAuth();
+
+  const items = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/leads', label: 'Chats', icon: Users },
+    { href: '/properties', label: 'Props', icon: Building2 },
+    ...(user?.role === 'ADMIN' ? [{ href: '/settings', label: 'Config', icon: Settings }] : []),
+  ];
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background z-50 safe-area-inset-bottom">
       <div className="flex">

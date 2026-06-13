@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { api } from '@/services/api';
 import { useAuth } from '@/store/auth';
 import {
-  LayoutDashboard, Users, Building2, Wifi, WifiOff,
+  LayoutDashboard, Users, Building2, Settings, Wifi, WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -12,7 +12,7 @@ const LOGO_URL = 'https://inmo.com.py/wp-content/uploads/2024/05/inmoLogo2.000a4
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/leads', label: 'Chats', icon: Users, badge: 'live' },
+  { href: '/leads', label: 'Chats', icon: Users, badge: 'live' as const },
   { href: '/properties', label: 'Propiedades', icon: Building2 },
 ];
 
@@ -88,6 +88,19 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
             </NavLink>
           );
         })}
+        {user?.role === 'ADMIN' && (
+          <>
+            <div className="border-t my-2" />
+            <NavLink to="/settings" className={({ isActive }) => cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+              isActive ? 'bg-primary/10 text-primary' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              collapsed && 'justify-center px-2'
+            )}>
+              <Settings className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>Configuración</span>}
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {user && (

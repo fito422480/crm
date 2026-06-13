@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/Dashboard';
 import { LeadsPage } from '@/pages/Leads';
 import { PropertiesPage } from '@/pages/Properties';
 import { PropertyDetailPage } from '@/pages/PropertyDetail';
+import { SettingsPage } from '@/pages/Settings';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -40,6 +41,7 @@ function App() {
           <Route path="/leads/:id" element={<LeadsPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/properties/:id" element={<PropertyDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

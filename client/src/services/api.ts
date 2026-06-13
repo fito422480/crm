@@ -79,8 +79,12 @@ export const api = {
     list: () => request<any[]>('/users'),
     vendedores: () => request<any[]>('/users/vendedores'),
     workload: () => request<any[]>('/users/workload'),
+    create: (data: any) =>
+      request<any>('/users', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      request<any>(`/users/${id}`, { method: 'DELETE' }),
     toggleAvailability: (id: string) =>
       request<any>(`/users/${id}/availability`, { method: 'PATCH' }),
   },

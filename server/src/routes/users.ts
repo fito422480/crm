@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../index';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, requireAdmin } from '../middleware/auth';
 import { z } from 'zod';
 
 export const usersRouter = Router();
@@ -90,6 +91,48 @@ usersRouter.get('/workload', async (req: AuthRequest, res: Response) => {
     res.json(stats);
   } catch {
     res.status(500).json({ error: 'error al obtener carga laboral' });
+  }
+});
+
+const createUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+  password: z.string().min(6),
+  role: z.enum(['ADMIN', 'VENDEDOR', 'AGENTE']),
+  zone: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  disponible: z.boolean().optional(),
+});
+
+usersRouter.post('/', requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const data = createUserSchema.parse(req.body);
+    const exists = await prisma.user.findUnique({ where: { email: data.email } });
+    if (exists) return res.status(400).json({ error: 'el email ya está registrado' });
+    const hashed = await bcrypt.hash(data.password, 10);
+    const user = await prisma.user.create({
+      data: { ...data, password: hashed },
+      select: { id: true, name: true, email: true, role: true, zone: true, phone: true, active: true, disponible: true },
+    });
+    res.status(201).json(user);
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: 'datos inválidos', details: error.errors });
+    res.status(500).json({ error: 'error al crear usuario' });
+  }
+});
+
+usersRouter.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.params.id === req.userId) return res.status(400).json({ error: 'no puedes eliminarte a ti mismo' });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'usuario no encontrado' });
+    await prisma.user.update({
+      where: { id: req.params.id },
+      data: { active: false, disponible: false },
+    });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'error al eliminar usuario' });
   }
 });
 
