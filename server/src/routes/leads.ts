@@ -354,7 +354,7 @@ leadsRouter.post('/:id/notify-vendor', async (req: AuthRequest, res: Response) =
       },
     );
 
-    const metaData = await metaRes.json();
+    const metaData = await metaRes.json() as any;
     if (!metaRes.ok) {
       console.error('meta api error:', metaData);
       return res.status(502).json({ error: 'error al enviar WhatsApp', details: metaData });
