@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Plus, Pencil, Trash2, Shield, UserCog, User,
+  Plus, Pencil, Trash2, Shield, UserCog, User as UserIcon,
   Wifi, WifiOff, Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ import type { User } from '@/types';
 const roleConfig = {
   ADMIN: { label: 'Admin', icon: Shield, color: 'text-rose-600 dark:text-rose-400' },
   VENDEDOR: { label: 'Vendedor', icon: UserCog, color: 'text-blue-600 dark:text-blue-400' },
-  AGENTE: { label: 'Agente', icon: User, color: 'text-emerald-600 dark:text-emerald-400' },
+  AGENTE: { label: 'Agente', icon: UserIcon, color: 'text-emerald-600 dark:text-emerald-400' },
 };
 
 export function SettingsPage() {
@@ -163,7 +163,7 @@ export function SettingsPage() {
                 <TableCell colSpan={7} className="text-center text-muted-foreground">Sin usuarios</TableCell>
               </TableRow>
             ) : filtered.map((u) => {
-              const RoleIcon = roleConfig[u.role as keyof typeof roleConfig]?.icon || User;
+              const RoleIcon = roleConfig[u.role as keyof typeof roleConfig]?.icon || UserIcon;
               const roleLabel = roleConfig[u.role as keyof typeof roleConfig]?.label || u.role;
               const roleColor = roleConfig[u.role as keyof typeof roleConfig]?.color || '';
               return (
@@ -207,9 +207,6 @@ export function SettingsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editUser ? 'Editar usuario' : 'Nuevo usuario'}</DialogTitle>
-            <DialogDescription>
-              {editUser ? 'Actualizá los datos del usuario.' : 'Completá los datos para crear un nuevo usuario.'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
